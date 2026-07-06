@@ -103,6 +103,19 @@ document.getElementById('join-form').addEventListener('submit', async (e) => {
 
 /* --------------------------------------------------------------- escolha */
 
+/**
+ * Toca a animação de entrada (carimbo) uma vez e, ao terminar, deixa a
+ * figurinha balançando suavemente (classe .sticker-idle no CSS).
+ */
+function stampThenSway(el, i) {
+  el.style.setProperty('--i', i);
+  el.style.animation = `stamp .45s ${i * 0.06}s cubic-bezier(.2,2,.4,1) both`;
+  el.addEventListener('animationend', () => {
+    el.style.animation = ''; // libera o balanço suave contínuo do CSS
+    el.classList.add('sticker-idle');
+  }, { once: true });
+}
+
 function pickNeed() {
   return Math.min(state?.pickSize || 9, me?.dealt.length || 9);
 }
@@ -111,15 +124,22 @@ function renderPick() {
   const grid = document.getElementById('pick-grid');
   document.getElementById('pick-title').textContent = `Monte sua seleção, ${me.name.split(' ')[0]}!`;
   document.getElementById('pick-need').textContent = pickNeed();
-  grid.innerHTML = '';
-  me.dealt.forEach((id, i) => {
-    const s = stickerById(id);
-    if (!s) return;
-    const el = stickerEl(s, { selectable: true, selected: selected.has(id) });
-    el.style.animation = `stamp .45s ${i * 0.06}s cubic-bezier(.2,2,.4,1) both`;
-    el.addEventListener('click', () => togglePick(id, el));
-    grid.appendChild(el);
-  });
+
+  // a tela é reconstruída a cada sincronização com o servidor (polling);
+  // a grade em si só muda quando o participante muda, então só remontamos
+  // (e só tocamos a animação de entrada) nesse caso.
+  if (grid.dataset.dealtFor !== me.id) {
+    grid.innerHTML = '';
+    me.dealt.forEach((id, i) => {
+      const s = stickerById(id);
+      if (!s) return;
+      const el = stickerEl(s, { selectable: true, selected: selected.has(id) });
+      stampThenSway(el, i);
+      el.addEventListener('click', () => togglePick(id, el));
+      grid.appendChild(el);
+    });
+    grid.dataset.dealtFor = me.id;
+  }
   updatePickCounter();
 }
 
@@ -157,20 +177,35 @@ document.getElementById('pick-confirm').addEventListener('click', async () => {
 function renderCard(justDrawnId) {
   document.getElementById('card-title').textContent = `Seleção de ${me.name}`;
   const grid = document.getElementById('card-grid');
-  grid.innerHTML = '';
+
+  // A tela é reconstruída a cada sincronização (polling). Montamos a grade
+  // só uma vez: as figurinhas pendentes (P&B) entram e ficam balançando.
+  // Depois, apenas as que forem sorteadas são atualizadas individualmente
+  // (carimbo colorido) — assim o balanço das pendentes nunca reinicia.
+  if (grid.dataset.builtFor !== me.id) {
+    grid.innerHTML = '';
+    me.chosen.forEach((id, i) => {
+      const s = stickerById(id);
+      if (!s) return;
+      const el = stickerEl(s, { pending: !state.drawn.includes(id), drawn: state.drawn.includes(id) });
+      if (!state.drawn.includes(id)) stampThenSway(el, i);
+      grid.appendChild(el);
+    });
+    grid.dataset.builtFor = me.id;
+  }
+
   let done = 0;
   me.chosen.forEach((id) => {
     const s = stickerById(id);
     if (!s) return;
     const isDrawn = state.drawn.includes(id);
     if (isDrawn) done++;
-    grid.appendChild(
-      stickerEl(s, {
-        pending: !isDrawn,
-        drawn: isDrawn,
-        stamped: id === justDrawnId
-      })
-    );
+    const el = grid.querySelector(`.sticker[data-id="${id}"]`);
+    // figurinha acabou de ser sorteada: troca o P&B pelo carimbo colorido
+    if (el && isDrawn && !el.classList.contains('drawn-mark')) {
+      const fresh = stickerEl(s, { drawn: true, stamped: id === justDrawnId });
+      el.replaceWith(fresh); // sem balanço: fica "colada" no álbum
+    }
   });
 
   const band = document.getElementById('card-progress');

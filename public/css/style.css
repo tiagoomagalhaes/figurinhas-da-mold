@@ -24,6 +24,8 @@
 
 * { box-sizing: border-box; }
 
+html, body { overflow-x: hidden; } /* clipa o leve excesso da rotação do balanço */
+
 body {
   margin: 0;
   font-family: var(--font-body);
@@ -136,6 +138,7 @@ body {
   gap: 6px;
   transition: transform .15s ease, box-shadow .15s ease, filter .3s ease;
   user-select: none;
+  min-width: 0; /* deixa a figurinha encolher com a coluna, sem estourar a tela */
 }
 .sticker .row-top {
   display: flex;
@@ -224,8 +227,9 @@ body {
 
 /* estados */
 .sticker.selectable { cursor: pointer; }
-.sticker.selectable:hover { transform: translateY(-4px) rotate(-.6deg); box-shadow: 0 12px 22px rgba(42,32,19,.4); }
+.sticker.selectable:hover { animation: none; transform: translateY(-4px) rotate(-.6deg); box-shadow: 0 12px 22px rgba(42,32,19,.4); }
 .sticker.selected {
+  animation: none;
   outline-color: var(--mold-blue);
   box-shadow: 0 0 0 4px rgba(27,156,216,.45), 0 10px 20px rgba(42,32,19,.35);
   transform: translateY(-4px);
@@ -248,6 +252,16 @@ body {
 @keyframes stamp {
   0% { transform: scale(1.6) rotate(-6deg); filter: grayscale(1) opacity(.4); }
   100% { transform: scale(1) rotate(0); filter: none; }
+}
+
+/* balanço suave e contínuo, aplicado só depois da entrada (ver participante.js) */
+.sticker-idle {
+  animation: sway 3.6s ease-in-out calc(var(--i, 0) * -0.37s) infinite;
+  transform-origin: 50% 100%;
+}
+@keyframes sway {
+  0%, 100% { transform: translateX(-3px) rotate(-1.2deg); }
+  50% { transform: translateX(3px) rotate(1.2deg); }
 }
 .sticker.drawn-mark::before {
   content: 'SORTEADA!';
@@ -280,18 +294,12 @@ body {
   background: repeating-linear-gradient(45deg, transparent 0 10px, rgba(122,31,61,.04) 10px 20px);
 }
 
-/* grades */
+/* grades — minmax(0,1fr) deixa as colunas encolherem (o conteúdo trunca com
+   reticências) em vez de forçar largura maior que a tela no celular */
 .grid { display: grid; gap: 14px; }
-.grid-15 { grid-template-columns: repeat(5, 1fr); }
-.grid-9 { grid-template-columns: repeat(3, 1fr); max-width: 560px; margin: 0 auto; }
-@media (max-width: 760px) {
-  .grid-15 { grid-template-columns: repeat(3, 1fr); }
-  .topbar img.mascot { height: 54px; }
-}
-@media (max-width: 420px) {
-  .grid-15 { grid-template-columns: repeat(2, 1fr); }
-  .grid-9 { gap: 10px; }
-}
+.grid-15 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* a cartela é sempre 3×3, como no álbum — idêntica no celular e no desktop */
+.grid-9 { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 560px; margin: 0 auto; }
 
 /* -------------------------------------------------- botões e formulários */
 
@@ -406,4 +414,57 @@ body {
 }
 @keyframes fall {
   to { transform: translateY(105vh) rotate(720deg); opacity: .9; }
+}
+
+/* ============================================================
+   Responsivo — no celular mantém a mesma identidade do desktop,
+   apenas reescalando a grade de 15 e ajustando espaçamentos.
+   A cartela (grid-9) permanece 3×3, igual ao computador.
+   ============================================================ */
+
+/* tablets e telas médias */
+@media (max-width: 900px) {
+  .grid-15 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* celulares grandes / paisagem */
+@media (max-width: 680px) {
+  .container { padding: 0 12px 48px; }
+  .album-page { padding: 20px 16px; }
+  .grid { gap: 11px; }
+  .grid-15 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .topbar { gap: 12px; padding: 14px 14px 10px; }
+  .topbar img.mascot { height: 56px; }
+  .topbar .sub { letter-spacing: 3px; }
+  .topbar .sub::before, .topbar .sub::after { width: 30px; }
+  /* título e dica empilhados para não se espremerem */
+  .album-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .album-header .hint { max-width: none; }
+}
+
+/* celulares comuns */
+@media (max-width: 480px) {
+  .grid { gap: 9px; }
+  .grid-9 { gap: 9px; }
+  .album-page {
+    padding: 16px 12px;
+    box-shadow:
+      inset 0 0 0 4px var(--cream),
+      inset 0 0 0 6px rgba(179,135,42,.5),
+      0 12px 30px rgba(0,0,0,.45);
+  }
+  .topbar img.mascot { height: 48px; }
+  .topbar img.logo { height: 22px; }
+  .album-header h2 { font-size: 25px; }
+  .actions { gap: 9px; }
+  .counter-pill { font-size: 19px; padding: 7px 16px 4px; }
+  /* mantém a legibilidade da figurinha mesmo em 3 colunas estreitas */
+  .sticker .banner .name { font-size: 14px; }
+  .sticker .badge-num { font-size: 13px; }
+  .progress-band .dot { width: 18px; height: 18px; }
+}
+
+/* celulares muito estreitos */
+@media (max-width: 340px) {
+  .grid-15 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
