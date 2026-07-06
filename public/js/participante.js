@@ -35,22 +35,42 @@ async function init() {
   connectEvents(onEvent);
 }
 
+let prevDrawn = null; // sorteadas conhecidas na última atualização
+
 function onEvent(ev) {
   if (ev.state) state = ev.state;
   if (ev.reset === 'all') {
     localStorage.removeItem('copaMold.participantId');
     me = null;
     selected.clear();
+    prevDrawn = null;
   }
-  if (ev.type === 'draw' && me?.chosen) {
-    renderCard(ev.sticker?.id);
-    const mine = ev.newWinners?.find((w) => w.id === me.id);
-    if (mine) {
-      showWinnerOverlay([me.name], mine.order === 1 ? 'Você venceu!' : `Cartela completa! (${mine.order}º)`);
-    }
+  if (me?.chosen && state) {
+    // com polling não há evento "draw": detectamos comparando com o estado anterior
+    const newIds = prevDrawn ? state.drawn.filter((id) => !prevDrawn.includes(id)) : [];
+    prevDrawn = state.drawn.slice();
+    const mineDrawn = newIds.find((id) => me.chosen.includes(id));
+    renderCard(mineDrawn);
+    showStep('card');
+    announceIfWon();
     return;
   }
+  if (state) prevDrawn = state.drawn.slice();
   render();
+}
+
+/* Anuncia a vitória uma única vez (sobrevive a recargas da página). */
+function announceIfWon() {
+  const winnerIds = state.winners.map((w) => w.participantId);
+  const idx = winnerIds.indexOf(me.id);
+  const key = `copaMold.winAnnounced.${me.id}`;
+  if (idx === -1) {
+    localStorage.removeItem(key); // sorteio foi zerado: libera novo anúncio
+    return;
+  }
+  if (localStorage.getItem(key)) return;
+  localStorage.setItem(key, '1');
+  showWinnerOverlay([me.name], idx === 0 ? 'Você venceu!' : `Cartela completa! (${idx + 1}º)`);
 }
 
 function render() {

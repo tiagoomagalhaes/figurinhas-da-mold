@@ -1,36 +1,45 @@
 const crypto = require('crypto');
-const { kv } = require('@vercel/kv');
+const { kv, createClient } = require('@vercel/kv');
 const { put, del } = require('@vercel/blob');
 
 const DEAL_SIZE = 15;
 const PICK_SIZE = 9;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'moldsoft';
+const IS_VERCEL = !!process.env.VERCEL;
 
-let db = {
-  stickers: [],
-  participants: [],
-  drawn: [],
-  winners: []
-};
-let dbLoaded = false;
-
-async function loadDb() {
-  if (dbLoaded) return;
-  try {
-    const data = await kv.get('copa_db');
-    if (data) db = Object.assign(db, data);
-    dbLoaded = true;
-  } catch (e) {
-    console.error('Erro ao carregar do KV:', e);
+// Aceita tanto as variáveis do KV clássico quanto as do Upstash (marketplace).
+const kvClient = (() => {
+  if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) return kv;
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    return createClient({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN
+    });
   }
+  return null;
+})();
+
+const EMPTY_DB = () => ({ stickers: [], participants: [], drawn: [], winners: [] });
+let db = EMPTY_DB(); // sem KV (dev local), vive só em memória
+
+// Em serverless cada requisição pode cair numa instância diferente:
+// SEMPRE recarrega do KV para nunca servir (nem gravar) estado obsoleto.
+async function loadDb() {
+  if (!kvClient) {
+    if (IS_VERCEL) {
+      throw new Error(
+        'Banco de dados não configurado: no painel da Vercel, abra a aba Storage, ' +
+        'crie um banco Redis (Upstash for Redis / KV), conecte a este projeto e faça um novo deploy.'
+      );
+    }
+    return; // dev local sem KV: usa memória
+  }
+  const data = await kvClient.get('copa_db');
+  db = Object.assign(EMPTY_DB(), data || {});
 }
 
 async function saveDb() {
-  try {
-    await kv.set('copa_db', db);
-  } catch (e) {
-    console.error('Erro ao salvar no KV:', e);
-  }
+  if (kvClient) await kvClient.set('copa_db', db);
 }
 
 const uid = () => crypto.randomBytes(6).toString('hex');
@@ -78,6 +87,8 @@ function json(res, code, body) {
 }
 
 function readBody(req) {
+  // Na Vercel o corpo JSON pode chegar já interpretado em req.body.
+  if (req.body && typeof req.body === 'object') return Promise.resolve(req.body);
   return new Promise((resolve, reject) => {
     let size = 0;
     const chunks = [];
@@ -104,16 +115,18 @@ function readBody(req) {
 async function savePhoto(id, dataUrl) {
   const m = /^data:image\/(png|jpe?g|webp);base64,(.+)$/s.exec(dataUrl || '');
   if (!m) return null;
+  if (IS_VERCEL && !process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error(
+      'Upload de fotos não configurado: no painel da Vercel, abra a aba Storage, ' +
+      'crie um Blob store, conecte a este projeto e faça um novo deploy.'
+    );
+  }
   const ext = m[1] === 'jpeg' ? 'jpg' : m[1];
   const file = `uploads/${id}.${ext}`;
   const buffer = Buffer.from(m[2], 'base64');
-  try {
-    const blob = await put(file, buffer, { access: 'public' });
-    return blob.url;
-  } catch (e) {
-    console.error('Erro no upload Blob:', e);
-    return null;
-  }
+  // Sufixo aleatório: permite trocar a foto sem conflito de nome no Blob.
+  const blob = await put(file, buffer, { access: 'public', addRandomSuffix: true });
+  return blob.url;
 }
 
 async function deletePhoto(sticker) {
@@ -146,9 +159,33 @@ function isAdmin(req) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-const serverHandler = async (req, res) => {
+const handleRequest = async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  await loadDb();
+
+  // Diagnóstico do ambiente (não expõe segredos) — abra /api/health no navegador.
+  if (url.pathname === '/api/health') {
+    const out = {
+      vercel: IS_VERCEL,
+      kvConfigurado: !!kvClient,
+      blobConfigurado: !!process.env.BLOB_READ_WRITE_TOKEN,
+      kvOk: false
+    };
+    try {
+      if (kvClient) {
+        await kvClient.set('copa_health', Date.now());
+        out.kvOk = true;
+      }
+    } catch (e) {
+      out.kvErro = e.message;
+    }
+    return json(res, 200, out);
+  }
+
+  try {
+    await loadDb();
+  } catch (e) {
+    return json(res, 503, { error: e.message });
+  }
 
   const seg = url.pathname.split('/').filter(Boolean);
   const method = req.method;
@@ -306,6 +343,16 @@ const serverHandler = async (req, res) => {
   }
 
   json(res, 404, { error: 'Rota não encontrada (API).' });
+};
+
+// Toda falha vira uma resposta JSON legível em vez de um 500 genérico da Vercel.
+const serverHandler = async (req, res) => {
+  try {
+    await handleRequest(req, res);
+  } catch (e) {
+    console.error('Erro na API:', e);
+    if (!res.headersSent) json(res, 500, { error: e.message || 'Erro interno.' });
+  }
 };
 
 module.exports = serverHandler;
