@@ -1,0 +1,10 @@
+# dados em runtime (ficam no disco persistente do host, nunca no repositório)
+data/
+
+# arquivos do sistema / pessoais que não devem ser publicados
+.DS_Store
+*.pdf
+
+# dependências (não há, mas por garantia)
+node_modules/
+npm-debug.log*

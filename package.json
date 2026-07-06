@@ -1,0 +1,16 @@
+{
+  "name": "copa-moldsoft-figurinhas",
+  "version": "1.0.0",
+  "description": "Álbum de figurinhas da Copa Moldsoft — dinâmica de integração",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.5.0",
+    "@vercel/kv": "^3.0.0"
+  }
+}

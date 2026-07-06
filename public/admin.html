@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administração — Copa Moldsoft</title>
+  <link rel="icon" href="/assets/bimold.png">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-grid { display: grid; grid-template-columns: 340px 1fr; gap: 26px; align-items: start; }
+    @media (max-width: 900px) { .admin-grid { grid-template-columns: 1fr; } }
+    .sticker-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+    .sticker .tools { display: flex; gap: 6px; justify-content: center; margin-top: 6px; }
+    .tools button { border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 700; font-size: 12px; }
+    .tools .edit { background: #dceefb; color: #0f5e88; }
+    .tools .del { background: #fbdede; color: #8f1f1f; }
+    .ptable { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .ptable th, .ptable td { text-align: left; padding: 8px 10px; border-bottom: 1px solid rgba(179,135,42,.35); }
+    .ptable th { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #6d5b36; }
+    .pill { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 700; }
+    .pill.ok { background: #e8f7ee; color: #14603a; }
+    .pill.wait { background: #fdf3dc; color: #8a6720; }
+    .pill.win { background: #ffe9a8; color: #7a5200; }
+    .navlinks { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 22px; }
+    .navlinks a { color: #bfe3f5; font-weight: 700; text-decoration: none; border: 2px solid rgba(191,227,245,.4); border-radius: 8px; padding: 8px 16px; }
+    .navlinks a:hover { border-color: var(--gold); color: #ffe9a8; }
+    .photo-preview { width: 84px; height: 100px; object-fit: cover; border-radius: 8px; border: 2px solid var(--gold); display: none; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <img class="mascot" src="/assets/bimold.png" alt="bimold">
+    <div class="title">
+      <h1>Copa Moldsoft</h1>
+      <div class="sub">Painel do Administrador</div>
+      <img class="logo" src="/assets/logo-moldsoft-white.webp" alt="Moldsoft">
+    </div>
+  </header>
+
+  <main class="container">
+    <nav class="navlinks">
+      <a href="/">Página do participante</a>
+      <a href="/sorteio.html">Telão do sorteio</a>
+    </nav>
+
+    <div id="msg"></div>
+
+    <div class="admin-grid">
+      <!-- cadastro -->
+      <section class="album-page">
+        <div class="album-header"><h2 id="form-title">Nova figurinha</h2></div>
+        <form id="sticker-form">
+          <input type="hidden" id="f-id">
+          <div class="field">
+            <label for="f-name">Nome do colaborador</label>
+            <input type="text" id="f-name" maxlength="60" required placeholder="Ex.: Tiago Magalhães">
+          </div>
+          <div class="field">
+            <label for="f-role">Posição / cargo</label>
+            <input type="text" id="f-role" maxlength="60" placeholder="Ex.: Atacante · Desenvolvedor">
+          </div>
+          <div class="field">
+            <label for="f-photo">Foto</label>
+            <input type="file" id="f-photo" accept="image/png,image/jpeg,image/webp">
+            <img id="f-preview" class="photo-preview" alt="">
+          </div>
+          <div class="actions" style="justify-content:flex-start">
+            <button class="btn sm" type="submit" id="f-submit">Cadastrar</button>
+            <button class="btn sm ghost" type="button" id="f-cancel" style="display:none;color:#5b4a28;box-shadow:inset 0 0 0 2px #5b4a28">Cancelar</button>
+          </div>
+        </form>
+
+        <hr style="border:none;border-top:2px dashed rgba(179,135,42,.4);margin:22px 0">
+        <div class="album-header"><h2>Zona de perigo</h2></div>
+        <div class="actions" style="justify-content:flex-start">
+          <button class="btn sm bordo" id="btn-reset-draw">Zerar sorteio</button>
+          <button class="btn sm bordo" id="btn-reset-all">Zerar tudo (participantes + sorteio)</button>
+        </div>
+      </section>
+
+      <!-- listas -->
+      <div>
+        <section class="album-page">
+          <div class="album-header">
+            <h2>Figurinhas do álbum</h2>
+            <span class="counter-pill" id="sticker-count">0</span>
+          </div>
+          <div id="sticker-list" class="sticker-list"></div>
+        </section>
+
+        <section class="album-page">
+          <div class="album-header">
+            <h2>Participantes e cartelas</h2>
+            <span class="counter-pill" id="participant-count">0</span>
+          </div>
+          <table class="ptable">
+            <thead><tr><th>Participante</th><th>Cartela</th><th>Progresso</th><th></th></tr></thead>
+            <tbody id="participant-list"></tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div class="footer-note">
+    Painel administrativo &middot; <img src="/assets/logo-moldsoft-white.webp" alt="Moldsoft">
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

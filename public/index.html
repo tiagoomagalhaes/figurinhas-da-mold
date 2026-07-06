@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Copa Moldsoft — Álbum de Figurinhas</title>
+  <link rel="icon" href="/assets/bimold.png">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <img class="mascot" src="/assets/bimold.png" alt="bimold, mascote da Moldsoft">
+    <div class="title">
+      <h1>Copa Moldsoft</h1>
+      <div class="sub">Álbum de Figurinhas &middot; 2026</div>
+      <img class="logo" src="/assets/logo-moldsoft-white.webp" alt="Moldsoft">
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="msg"></div>
+
+    <!-- Passo 1: identificação -->
+    <section id="step-join" class="album-page" hidden>
+      <div class="album-header">
+        <h2>Bem-vindo ao álbum!</h2>
+        <div class="hint">Digite seu nome para receber seu pacotinho com <strong>15 figurinhas</strong> dos craques da Moldsoft.</div>
+      </div>
+      <form id="join-form" style="max-width:420px;margin:0 auto">
+        <div class="field">
+          <label for="join-name">Seu nome</label>
+          <input type="text" id="join-name" maxlength="60" required autocomplete="name" placeholder="Ex.: Ana Souza">
+        </div>
+        <div class="actions">
+          <button class="btn gold" type="submit">Abrir meu pacotinho 🎁</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Passo 2: escolha das 9 -->
+    <section id="step-pick" class="album-page" hidden>
+      <div class="album-header">
+        <h2 id="pick-title">Monte sua seleção</h2>
+        <div class="hint">Você recebeu <strong>15 figurinhas</strong>. Escolha <strong>9</strong> para montar a sua seleção. Quando elas forem sorteadas no telão, sua cartela vai se completando!</div>
+      </div>
+      <div id="pick-grid" class="grid grid-15"></div>
+      <div class="actions">
+        <span class="counter-pill"><span id="pick-count">0</span> / <span id="pick-need">9</span> escolhidas</span>
+        <button class="btn" id="pick-confirm" disabled>Confirmar minha seleção ⚽</button>
+      </div>
+    </section>
+
+    <!-- Passo 3: cartela registrada -->
+    <section id="step-card" class="album-page" hidden>
+      <div class="album-header">
+        <h2 id="card-title">Minha seleção</h2>
+        <div class="hint">Sua cartela está registrada para o sorteio! Acompanhe por aqui: as figurinhas “colam” no álbum conforme forem sorteadas.</div>
+      </div>
+      <div class="progress-band" id="card-progress"></div>
+      <p style="text-align:center;font-weight:700;color:#5b4a28;margin:4px 0 18px" id="card-progress-label"></p>
+      <div id="card-grid" class="grid grid-9"></div>
+    </section>
+  </main>
+
+  <div class="footer-note">
+    Dinâmica de integração &middot; <img src="/assets/logo-moldsoft-white.webp" alt="Moldsoft">
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/participante.js"></script>
+</body>
+</html>

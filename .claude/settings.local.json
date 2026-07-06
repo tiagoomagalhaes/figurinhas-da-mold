@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "Bash(curl -s http://localhost:3000/api/state)",
+      "Bash(curl -s -X POST http://localhost:3000/api/draw/next)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -X POST http://localhost:3000/api/draw/next)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -H \"x-admin-key: errada\" -X POST http://localhost:3000/api/reset-all)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -H \"x-admin-key: moldsoft\" http://localhost:3000/api/admin/check)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/api/state)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -X POST -H \"Content-Type: application/json\" -d '{\"name\":\"Teste Publico\"}' http://localhost:3000/api/participants)"
+    ]
+  }
+}

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sorteio — Copa Moldsoft</title>
+  <link rel="icon" href="/assets/bimold.png">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .stage { display: grid; grid-template-columns: 1fr 340px; gap: 26px; align-items: start; max-width: 1280px; margin: 0 auto; padding: 0 20px 40px; }
+    @media (max-width: 980px) { .stage { grid-template-columns: 1fr; } }
+
+    /* área de revelação */
+    .reveal-zone { text-align: center; color: #fff; }
+    .reveal-slot { perspective: 1200px; width: min(320px, 70vw); margin: 8px auto 18px; min-height: 420px; }
+    .reveal-slot .sticker { font-size: 1.25em; transform-style: preserve-3d; }
+    .reveal-slot .sticker .banner .name { font-size: 26px; }
+    .reveal-slot .sticker .banner .role { font-size: 12px; }
+    .reveal-slot .sticker .badge-num { font-size: 22px; }
+    .flip-in { animation: flipin .9s cubic-bezier(.2,1.4,.4,1) both; }
+    @keyframes flipin {
+      0% { transform: rotateY(180deg) scale(.6); opacity: 0; }
+      60% { transform: rotateY(-20deg) scale(1.06); opacity: 1; }
+      100% { transform: rotateY(0) scale(1); }
+    }
+    .reveal-placeholder {
+      width: 100%; min-height: 420px;
+      border: 3px dashed rgba(217,171,60,.5);
+      border-radius: 14px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+      color: #9dc4da; font-family: var(--font-display); font-size: 26px; letter-spacing: 2px;
+    }
+    .reveal-placeholder img { height: 130px; animation: bounce 2.4s ease-in-out infinite; }
+    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+
+    .draw-controls { display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap; }
+    .drawn-count { color: #bfe3f5; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; }
+
+    /* mural com todas as figurinhas */
+    .board { margin-top: 28px; }
+    .board h3, .side h3 {
+      font-family: var(--font-display); color: #ffe9a8; letter-spacing: 3px;
+      font-size: 22px; margin: 0 0 12px; text-align: center;
+    }
+    .board-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+    .board-grid .sticker { padding: 6px 5px 5px; font-size: .8em; }
+    .board-grid .sticker .banner .name { font-size: 11px; letter-spacing: .8px; }
+    .board-grid .sticker .banner .role { display: none; }
+    .board-grid .sticker .badge-ed { display: none; }
+    .board-grid .sticker .crest { display: none; }
+    .board-grid .sticker .badge-num { font-size: 11px; padding: 2px 5px 0; }
+    .board-grid .sticker.drawn-mark::before { font-size: 10px; padding: 1px 4px 0; }
+
+    /* placar lateral */
+    .side .album-page { padding: 18px 16px; }
+    .rank-row { display: flex; align-items: center; gap: 10px; padding: 7px 4px; border-bottom: 1px dashed rgba(179,135,42,.4); }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-row .nm { flex: 1; font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rank-row .bar { flex: 1.2; height: 12px; border-radius: 999px; background: rgba(122,31,61,.15); overflow: hidden; }
+    .rank-row .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--mold-blue), var(--green)); border-radius: 999px; transition: width .5s; }
+    .rank-row .pc { font-family: var(--font-display); font-size: 16px; width: 44px; text-align: right; color: var(--bordo); }
+    .rank-row.done { background: #fff7dd; border-radius: 8px; }
+    .rank-row.done .pc { color: var(--gold-dark); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <img class="mascot" src="/assets/bimold.png" alt="bimold">
+    <div class="title">
+      <h1>Sorteio da Copa Moldsoft</h1>
+      <div class="sub">Quem completa a seleção primeiro?</div>
+      <img class="logo" src="/assets/logo-moldsoft-white.webp" alt="Moldsoft">
+    </div>
+  </header>
+
+  <div class="stage">
+    <div class="reveal-zone">
+      <div class="reveal-slot" id="reveal-slot">
+        <div class="reveal-placeholder">
+          <img src="/assets/bimold.png" alt="bimold">
+          <span>Clique em “Sortear” para revelar<br>a primeira figurinha!</span>
+        </div>
+      </div>
+      <div class="draw-controls">
+        <button class="btn gold" id="btn-draw" style="font-size:26px;padding:16px 40px 12px">Sortear figurinha 🎲</button>
+        <span class="drawn-count" id="drawn-count"></span>
+      </div>
+      <p style="color:#7fa8bf;font-size:12px;margin-top:10px">Dica: a barra de espaço também sorteia.</p>
+
+      <div class="board">
+        <h3>Mural de figurinhas</h3>
+        <div class="board-grid" id="board-grid"></div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <section class="album-page">
+        <h3 style="color:var(--bordo)">Placar das cartelas</h3>
+        <div id="rank"></div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="footer-note">
+    Telão do evento &middot; <img src="/assets/logo-moldsoft-white.webp" alt="Moldsoft">
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/sorteio.js"></script>
+</body>
+</html>
