@@ -25,6 +25,40 @@
     .navlinks a { color: #bfe3f5; font-weight: 700; text-decoration: none; border: 2px solid rgba(191,227,245,.4); border-radius: 8px; padding: 8px 16px; }
     .navlinks a:hover { border-color: var(--gold); color: #ffe9a8; }
     .photo-preview { width: 84px; height: 100px; object-fit: cover; border-radius: 8px; border: 2px solid var(--gold); display: none; }
+
+    /* -------- cadastro em lote (dentro do card "Nova figurinha") -------- */
+    /* .actions/.sticker-list definem "display" próprio, que empataria em
+       especificidade com [hidden] do navegador — força esconder mesmo assim */
+    #batch-textmode[hidden], #batch-bulk-fields[hidden], #batch-subtitle-field[hidden],
+    #batch-summary[hidden], #batch-grid[hidden], #batch-progress[hidden],
+    #batch-actions[hidden], #sticker-form[hidden] { display: none; }
+    .field-hint { font-size: 12px; color: #6d5b36; margin: -8px 0 12px; }
+    .field-label-standalone { font-weight: 700; font-size: 13px; letter-spacing: .5px; color: #5b4a28; text-transform: uppercase; display: block; margin-bottom: 8px; }
+    .textmode-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    .textmode-options label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; font-weight: 600; color: #4a3c20; }
+    .batch-bulk-fields { margin-bottom: 4px; }
+    .batch-summary { font-size: 13px; color: #5b4a28; margin: 2px 0 12px; font-weight: 700; }
+    .batch-summary .muted { font-weight: 500; color: #7a6a45; }
+    .batch-grid {
+      max-height: 460px; overflow-y: auto;
+      padding: 6px; margin-bottom: 14px;
+      border: 1px dashed rgba(179,135,42,.4); border-radius: 10px;
+      background: rgba(255,255,255,.35);
+    }
+    .sticker-preview { position: relative; }
+    .sticker-preview::before {
+      content: 'PRÉVIA';
+      position: absolute; top: -8px; right: -6px; z-index: 2;
+      background: var(--mold-blue); color: #fff; font-family: var(--font-display);
+      font-size: 10px; letter-spacing: 1px; padding: 2px 7px 0; border-radius: 5px;
+      border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.3);
+    }
+    .sticker-preview .item-error { color: #8f1f1f; font-size: 10.5px; text-align: center; margin-top: 5px; font-weight: 700; line-height: 1.3; }
+    .batch-progress { margin: 10px 0 4px; }
+    .batch-progress .bar-outer { height: 10px; border-radius: 999px; background: rgba(122,31,61,.15); overflow: hidden; margin-bottom: 6px; }
+    .batch-progress .bar-inner { height: 100%; background: linear-gradient(90deg, var(--mold-blue), var(--green)); transition: width .2s; }
+    .batch-progress .status-text { font-size: 13px; color: #5b4a28; font-weight: 700; }
+    .batch-item-modal img { width: 150px; height: auto; border-radius: 8px; border: 2px solid var(--gold); margin-bottom: 14px; }
   </style>
 </head>
 <body>
@@ -49,24 +83,64 @@
       <!-- cadastro -->
       <section class="album-page">
         <div class="album-header"><h2 id="form-title">Nova figurinha</h2></div>
-        <form id="sticker-form">
+
+        <!-- modo padrão: cadastro em lote -->
+        <div id="batch-create">
+          <div class="field">
+            <label for="f-photo">Foto(s)</label>
+            <input type="file" id="f-photo" accept="image/png,image/jpeg,image/webp" multiple>
+          </div>
+          <p class="field-hint">Selecione uma ou várias imagens de uma vez — dá para adicionar mais depois, sem perder o que já foi carregado.</p>
+
+          <div id="batch-textmode" class="batch-textmode" hidden>
+            <label class="field-label-standalone">Textos das figurinhas</label>
+            <div class="textmode-options">
+              <label><input type="radio" name="textmode" value="none" checked> Sem texto</label>
+              <label><input type="radio" name="textmode" value="title"> Mesmo título para todas</label>
+              <label><input type="radio" name="textmode" value="title-subtitle"> Mesmo título e subtítulo para todas</label>
+              <label><input type="radio" name="textmode" value="custom"> Personalizar individualmente</label>
+            </div>
+            <div id="batch-bulk-fields" class="batch-bulk-fields" hidden>
+              <div class="field">
+                <label for="batch-title">Título</label>
+                <input type="text" id="batch-title" maxlength="60" placeholder="Ex.: Equipe Comercial">
+              </div>
+              <div class="field" id="batch-subtitle-field" hidden>
+                <label for="batch-subtitle">Subtítulo</label>
+                <input type="text" id="batch-subtitle" maxlength="60" placeholder="Ex.: Diretoria">
+              </div>
+            </div>
+          </div>
+
+          <div id="batch-summary" class="batch-summary" hidden></div>
+          <div id="batch-grid" class="sticker-list batch-grid" hidden></div>
+          <div id="batch-progress" class="batch-progress" hidden></div>
+
+          <div class="actions" style="justify-content:flex-start" id="batch-actions" hidden>
+            <button class="btn sm" type="button" id="batch-submit">Cadastrar</button>
+            <button class="btn sm ghost" type="button" id="batch-clear" style="color:#5b4a28;box-shadow:inset 0 0 0 2px #5b4a28">Remover todas</button>
+          </div>
+        </div>
+
+        <!-- modo edição: editar uma figurinha já cadastrada -->
+        <form id="sticker-form" hidden>
           <input type="hidden" id="f-id">
           <div class="field">
-            <label for="f-name">Nome do colaborador</label>
-            <input type="text" id="f-name" maxlength="60" required placeholder="Ex.: Tiago Magalhães">
+            <label for="f-name">Título</label>
+            <input type="text" id="f-name" maxlength="60" placeholder="Ex.: Tiago Magalhães">
           </div>
           <div class="field">
-            <label for="f-role">Posição / cargo</label>
+            <label for="f-role">Subtítulo</label>
             <input type="text" id="f-role" maxlength="60" placeholder="Ex.: Atacante · Desenvolvedor">
           </div>
           <div class="field">
-            <label for="f-photo">Foto</label>
-            <input type="file" id="f-photo" accept="image/png,image/jpeg,image/webp">
+            <label for="f-photo-edit">Foto</label>
+            <input type="file" id="f-photo-edit" accept="image/png,image/jpeg,image/webp">
             <img id="f-preview" class="photo-preview" alt="">
           </div>
           <div class="actions" style="justify-content:flex-start">
-            <button class="btn sm" type="submit" id="f-submit">Cadastrar</button>
-            <button class="btn sm ghost" type="button" id="f-cancel" style="display:none;color:#5b4a28;box-shadow:inset 0 0 0 2px #5b4a28">Cancelar</button>
+            <button class="btn sm" type="submit" id="f-submit">Salvar</button>
+            <button class="btn sm ghost" type="button" id="f-cancel" style="color:#5b4a28;box-shadow:inset 0 0 0 2px #5b4a28">Cancelar</button>
           </div>
         </form>
 

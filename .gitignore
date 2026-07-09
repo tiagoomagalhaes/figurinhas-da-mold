@@ -8,3 +8,5 @@ data/
 # dependências (não há, mas por garantia)
 node_modules/
 npm-debug.log*
+.vercel
+.env*

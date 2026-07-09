@@ -112,7 +112,7 @@ function stickerEl(sticker, opts = {}) {
     <div class="photo">${photo}</div>
     <div class="banner">
       <div class="name">${escapeHtml(sticker.name)}</div>
-      <div class="role">${escapeHtml(sticker.role || 'Craque da Moldsoft')}</div>
+      ${sticker.role ? `<div class="role">${escapeHtml(sticker.role)}</div>` : ''}
     </div>
     <div class="crest"><img src="/assets/bimold.png" alt=""></div>
   `;

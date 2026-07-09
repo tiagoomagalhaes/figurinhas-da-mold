@@ -115,11 +115,16 @@ function readBody(req) {
 async function savePhoto(id, dataUrl) {
   const m = /^data:image\/(png|jpe?g|webp);base64,(.+)$/s.exec(dataUrl || '');
   if (!m) return null;
-  if (IS_VERCEL && !process.env.BLOB_READ_WRITE_TOKEN) {
-    throw new Error(
-      'Upload de fotos não configurado: no painel da Vercel, abra a aba Storage, ' +
-      'crie um Blob store, conecte a este projeto e faça um novo deploy.'
-    );
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    if (IS_VERCEL) {
+      throw new Error(
+        'Upload de fotos não configurado: no painel da Vercel, abra a aba Storage, ' +
+        'crie um Blob store, conecte a este projeto e faça um novo deploy.'
+      );
+    }
+    // Dev local sem Blob: guarda a imagem inline (data URL). O banco vive em
+    // memória mesmo, então dá para testar o painel por completo sem credenciais.
+    return dataUrl;
   }
   const ext = m[1] === 'jpeg' ? 'jpg' : m[1];
   const file = `uploads/${id}.${ext}`;
@@ -215,7 +220,8 @@ const handleRequest = async (req, res) => {
   if (url.pathname === '/api/stickers' && method === 'POST') {
     const body = await readBody(req);
     const name = String(body.name || '').trim();
-    if (!name) return json(res, 400, { error: 'Informe o nome do colaborador.' });
+    const hasPhoto = typeof body.photoData === 'string' && body.photoData.startsWith('data:image');
+    if (!name && !hasPhoto) return json(res, 400, { error: 'Informe ao menos um título ou uma foto.' });
     const id = uid();
     const photoUrl = await savePhoto(id, body.photoData);
     const sticker = {
